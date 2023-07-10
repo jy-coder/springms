@@ -1,32 +1,75 @@
 package com.springproject.orderservice.repository;
 
 import com.springproject.orderservice.BaseTest;
+import com.springproject.orderservice.controller.OrderController;
 import com.springproject.orderservice.entity.Order;
+import com.springproject.orderservice.entity.OrderDto;
 import com.springproject.orderservice.entity.OrderLineItems;
 
+import com.springproject.orderservice.mapper.AutoOrderMapper;
+import com.springproject.orderservice.service.OrderService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
+import static com.jayway.jsonpath.internal.path.PathCompiler.fail;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.*;
 
 @Testcontainers
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.location=classpath:application-test.properties")
 public class OrderRepositoryTest extends BaseTest {
     @Autowired
     private OrderRepository orderRepository;
+
+    private OrderController orderController;
+
+    @Mock
+    private OrderService orderService;
+
+    @BeforeEach
+    public void setup() {
+        MockitoAnnotations.openMocks(this);
+        orderController = new OrderController(orderService);
+    }
+    @Test
+    public void shouldCreateOrder() {
+        OrderDto orderDto = new OrderDto(
+                1L,
+                "ORD001",
+                AutoOrderMapper.MAPPER.mapToOrderLineItemsDtoList(
+                        List.of(
+                                new OrderLineItems(1L, "SKU001", BigDecimal.valueOf(100), 2),
+                                new OrderLineItems(2L, "SKU002", BigDecimal.valueOf(50), 3)
+                        )
+                )
+        );
+
+        when(orderService.createOrder(orderDto)).thenReturn("Order placed successfully");
+        CompletableFuture<String> result = orderController.createOrder(orderDto);
+
+        assertNotNull(result);
+        try {
+            assertEquals("Order placed successfully", result.get());
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            fail("An exception occurred while executing the asynchronous task.");
+        }
+        verify(orderService).createOrder(orderDto);
+    }
+
 
     @Test
     public void shouldSaveOrder() {
