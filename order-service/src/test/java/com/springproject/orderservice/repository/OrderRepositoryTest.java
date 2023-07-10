@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 @Testcontainers
-@SpringBootTest(properties = "spring.config.location=classpath:application-test.properties")
+@SpringBootTest
 public class OrderRepositoryTest extends BaseTest {
     @Autowired
     private OrderRepository orderRepository;
