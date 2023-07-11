@@ -24,3 +24,25 @@ jobs:
         run: mvn clean install
       - name: Test with Maven
         run: mvn test
+      - name: Check test results and exit on failure
+        run: |
+         if [ ${{ job.status }} == 'failure' ]; then
+           echo "Tests failed. Exiting the workflow."
+           exit 1
+         fi
+      - name: Docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Run Maven Build
+        if: success()
+        run: mvn clean compile jib:build
+
+        
+
+
+
+
+
