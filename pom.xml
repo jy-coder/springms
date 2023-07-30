@@ -16,6 +16,8 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
+        <module>user-service</module>
+        <module>auth-service</module>
         <module>product-service</module>
         <module>order-service</module>
         <module>inventory-service</module>
