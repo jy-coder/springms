@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+import java.util.Optional;
+
 @Service
 public class AuthService {
 
@@ -23,8 +26,14 @@ public class AuthService {
         return "User registered successfully";
     }
 
-    public String generateToken(String username) {
-        return jwtService.generateToken(username);
+    public boolean userExists(String email) {
+        Optional<UserCredential> userOptional = repository.findByEmail(email);
+        return userOptional.isPresent();
+    }
+
+
+    public String generateToken(String username, Date expiration) {
+        return jwtService.generateToken(username,expiration);
     }
 
     public void validateToken(String token) {
