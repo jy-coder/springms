@@ -1,13 +1,13 @@
 package com.springproject.apigateway.filter;
 
 import com.springproject.apigateway.error.UnauthorizedException;
-import com.springproject.apigateway.util.JwtUtil;
+import com.springproject.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 @Component
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
@@ -33,13 +33,20 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 }
 
                 String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
+                String accessToken = "";
                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                    authHeader = authHeader.substring(7);
+                    accessToken = authHeader.substring(7);
                 }
                 try {
 //                    //REST call to AUTH service
 //                    template.getForObject("http://auth-service//validate?token" + authHeader, String.class);
-                    jwtUtil.validateToken(authHeader);
+                    jwtUtil.validateToken(accessToken);
+
+                    ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
+                            .header(HttpHeaders.AUTHORIZATION, authHeader)
+                            .build();
+
+                    return chain.filter(exchange.mutate().request(modifiedRequest).build());
 
                 } catch (Exception e) {
                     throw new UnauthorizedException("Unauthorized - Invalid Token");

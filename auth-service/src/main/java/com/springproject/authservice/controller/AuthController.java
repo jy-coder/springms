@@ -38,7 +38,7 @@ public class AuthController {
     public ResponseEntity<TokenResponse> getToken(@RequestBody @Valid AuthRequest authRequest) {
         Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
         if (authenticate.isAuthenticated()) {
-            Date expiration = new Date(System.currentTimeMillis() + 1000 * 60 * 30); // Set your desired expiration time here
+            Date expiration = new Date(System.currentTimeMillis() + 1000 * 60 * 30);
             String token = service.generateToken(authRequest.getUsername(),expiration);
             TokenResponse tokenResponse = new TokenResponse(token, expiration);
 
