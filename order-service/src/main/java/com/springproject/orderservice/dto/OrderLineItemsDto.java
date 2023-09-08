@@ -1,4 +1,4 @@
-package com.springproject.orderservice.entity;
+package com.springproject.orderservice.dto;
 
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;

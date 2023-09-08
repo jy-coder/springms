@@ -1,5 +1,6 @@
 package com.springproject.orderservice.entity;
 
+import com.springproject.orderservice.dto.OrderLineItemsDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

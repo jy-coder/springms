@@ -1,4 +1,4 @@
-package com.springproject.notificationservice;
+package com.springproject.notificationservice.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

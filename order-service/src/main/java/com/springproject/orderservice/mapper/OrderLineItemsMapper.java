@@ -1,7 +1,7 @@
 package com.springproject.orderservice.mapper;
 
 import com.springproject.orderservice.entity.OrderLineItems;
-import com.springproject.orderservice.entity.OrderLineItemsDto;
+import com.springproject.orderservice.dto.OrderLineItemsDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
