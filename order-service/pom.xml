@@ -54,5 +54,10 @@
 			<artifactId>mockito-core</artifactId>
 			<version>5.4.0</version>
 		</dependency>
+		<dependency>
+			<groupId>com.springproject</groupId>
+			<artifactId>common</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 </project>

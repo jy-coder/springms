@@ -6,13 +6,13 @@ import com.springproject.orderservice.entity.OrderDto;
 import com.springproject.orderservice.entity.Order;
 import com.springproject.orderservice.entity.OrderLineItems;
 import com.springproject.orderservice.event.OrderPlacedEvent;
+import com.springproject.orderservice.exception.ProductNotInStockException;
 import com.springproject.orderservice.exception.ResourceNotFoundException;
 import com.springproject.orderservice.mapper.AutoOrderMapper;
 import com.springproject.orderservice.repository.OrderRepository;
 import com.springproject.orderservice.service.OrderService;
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationRegistry;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,13 +23,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
 @Transactional
 public class OrderServiceImpl implements OrderService {
     private OrderRepository orderRepository;
-    private final WebClient.Builder webClientBuilder;
-    private final ObservationRegistry observationRegistry;
+    private final WebClient  webClient;
     private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
+
+    @Autowired
+    public OrderServiceImpl(OrderRepository orderRepository,WebClient.Builder webClientBuilder, @Value("${inventory.service.base-url}") String baseUrl,  KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate) {
+        this.webClient = webClientBuilder.baseUrl(baseUrl).build();
+        this.orderRepository = orderRepository;
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     @Override
     public String createOrder(OrderDto orderDto) {
@@ -39,34 +44,23 @@ public class OrderServiceImpl implements OrderService {
                 .map(OrderLineItems::getSkuCode)
                 .toList();
 
-        Observation inventoryServiceObservation = Observation.createNotStarted("inventory-service-lookup",
-                this.observationRegistry);
-        inventoryServiceObservation.lowCardinalityKeyValue("call", "inventory-service");
+        InventoryResponse[] inventoryResponseArray = webClient.get()
+                .uri("/api/v1/inventory",
+                        uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
+                .retrieve()
+                .bodyToMono(InventoryResponse[].class)
+                .block();
 
-        return inventoryServiceObservation.observe(() -> {
-            InventoryResponse[] inventoryResponseArray = webClientBuilder.build().get()
-                    .uri("http://inventory-service/api/v1/inventory",
-                            uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
-                    .retrieve()
-                    .bodyToMono(InventoryResponse[].class)
-                    .block();
+        boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
+                .allMatch(InventoryResponse::isInStock);
 
-            boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
-                    .allMatch(InventoryResponse::isInStock);
-
-            if (allProductsInStock) {
-                orderRepository.save(order);
-                kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
-                return "Order Placed Successfully!";
-//            Order savedOrder = orderRepository.save(order);
-//            OrderDto savedOrderDto = AutoOrderMapper.MAPPER.mapToOrderDto(savedOrder);
-//            return savedOrderDto;
-            } else {
-                throw new IllegalArgumentException("Product is not in stock, please try again later");
-            }
-        });
-
-
+        if (allProductsInStock) {
+            orderRepository.save(order);
+            kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
+            return "Order Placed Successfully!";
+        } else {
+            throw new ProductNotInStockException();
+        }
 
     }
 
