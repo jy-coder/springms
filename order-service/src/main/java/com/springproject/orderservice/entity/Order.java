@@ -1,10 +1,7 @@
 package com.springproject.orderservice.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -13,7 +10,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "orders")
+@Builder
+@Table(name = "orders", indexes = @Index(name = "idx_user_id", columnList = "userId"))
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,4 +19,6 @@ public class Order {
     private String orderNumber;
     @OneToMany(cascade = CascadeType.ALL)
     private List<OrderLineItems> orderLineItemsList;
+
+    private Long userId;
 }
