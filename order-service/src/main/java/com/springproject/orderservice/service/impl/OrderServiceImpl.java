@@ -1,6 +1,7 @@
 package com.springproject.orderservice.service.impl;
 
 
+import com.springproject.orderservice.aop.InventoryServiceObserver;
 import com.springproject.orderservice.entity.InventoryResponse;
 import com.springproject.orderservice.entity.OrderDto;
 import com.springproject.orderservice.entity.Order;
@@ -11,15 +12,19 @@ import com.springproject.orderservice.exception.ResourceNotFoundException;
 import com.springproject.orderservice.mapper.AutoOrderMapper;
 import com.springproject.orderservice.repository.OrderRepository;
 import com.springproject.orderservice.service.OrderService;
+import io.micrometer.observation.annotation.Observed;
+import io.micrometer.tracing.annotation.ContinueSpan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +33,8 @@ public class OrderServiceImpl implements OrderService {
     private OrderRepository orderRepository;
     private final WebClient  webClient;
     private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
+    @Autowired
+    private InventoryServiceObserver inventoryServiceObserver;
 
     @Autowired
     public OrderServiceImpl(OrderRepository orderRepository,WebClient.Builder webClientBuilder, @Value("${inventory.service.base-url}") String baseUrl,  KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate) {
@@ -44,27 +51,26 @@ public class OrderServiceImpl implements OrderService {
                 .map(OrderLineItems::getSkuCode)
                 .toList();
 
-        InventoryResponse[] inventoryResponseArray = webClient.get()
-                .uri("/api/v1/inventory",
-                        uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
-                .retrieve()
-                .bodyToMono(InventoryResponse[].class)
-                .block();
+        inventoryServiceObserver.observeInventoryServiceCall(() -> {
+            InventoryResponse[] inventoryResponseArray = webClient.get()
+                    .uri("/api/v1/inventory", uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
+                    .retrieve()
+                    .bodyToMono(InventoryResponse[].class)
+                    .block();
+            boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
+                    .allMatch(InventoryResponse::isInStock);
 
-        boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
-                .allMatch(InventoryResponse::isInStock);
-
-        if (allProductsInStock) {
-            orderRepository.save(order);
-            kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
-            return "Order Placed Successfully!";
-        } else {
-            throw new ProductNotInStockException();
-        }
+            if (allProductsInStock) {
+                orderRepository.save(order);
+                kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
+                return "Order Placed Successfully!";
+            } else {
+                throw new ProductNotInStockException();
+            }
+        });
+        return "Order Placed Successfully!";
 
     }
-
-
 
     @Override
     public OrderDto getOrderById(Long orderId) {
