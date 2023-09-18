@@ -37,10 +37,11 @@ public class OrderServiceImpl implements OrderService {
     private InventoryServiceObserver inventoryServiceObserver;
 
     @Autowired
-    public OrderServiceImpl(OrderRepository orderRepository,WebClient.Builder webClientBuilder, @Value("${inventory.service.base-url}") String baseUrl,  KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate) {
+    public OrderServiceImpl(OrderRepository orderRepository,WebClient.Builder webClientBuilder, @Value("${inventory.service.base-url}") String baseUrl,  KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate, InventoryServiceObserver inventoryServiceObserver) {
         this.webClient = webClientBuilder.baseUrl(baseUrl).build();
         this.orderRepository = orderRepository;
         this.kafkaTemplate = kafkaTemplate;
+        this.inventoryServiceObserver = inventoryServiceObserver;
     }
 
     @Override
@@ -51,24 +52,24 @@ public class OrderServiceImpl implements OrderService {
                 .map(OrderLineItems::getSkuCode)
                 .toList();
 
-        inventoryServiceObserver.observeInventoryServiceCall(() -> {
+        boolean allProductsInStock =  inventoryServiceObserver.observeInventoryServiceCall(() -> {
             InventoryResponse[] inventoryResponseArray = webClient.get()
                     .uri("/api/v1/inventory", uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
                     .retrieve()
                     .bodyToMono(InventoryResponse[].class)
                     .block();
-            boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
-                    .allMatch(InventoryResponse::isInStock);
 
-            if (allProductsInStock) {
-                orderRepository.save(order);
-                kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
-                return "Order Placed Successfully!";
-            } else {
-                throw new ProductNotInStockException();
-            }
+            return Arrays.stream(inventoryResponseArray)
+                    .allMatch(InventoryResponse::isInStock);
         });
-        return "Order Placed Successfully!";
+
+        if (allProductsInStock) {
+            orderRepository.save(order);
+            kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
+            return "Order Placed Successfully!";
+        } else {
+            throw new ProductNotInStockException();
+        }
 
     }
 
