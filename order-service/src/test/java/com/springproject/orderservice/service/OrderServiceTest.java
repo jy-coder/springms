@@ -82,14 +82,14 @@ public class OrderServiceTest {
 
 
     @Test
-    public void AddOrder_thenAddNewOrder(){
+    public void AddOrder_AddNewOrder(){
         String response = orderService.createOrder(orderDto);
         assertEquals("Order Placed Successfully!", response);
     }
 
 
     @Test
-    public void GetAllOrder_returnOrdersList(){
+    public void GetAllOrder_ReturnOrdersList(){
        Order order1 = Order.builder().id(2L).orderNumber("123").orderLineItemsList(orderLineItemsList).build();
 
        given(orderRepository.findAll()).willReturn(List.of(order,order1));
@@ -102,7 +102,7 @@ public class OrderServiceTest {
 
 
     @Test
-    public void UpdateOrder_returnUpdatedOrder(){
+    public void UpdateOrder_ReturnUpdatedOrder(){
         long orderId = 1L;
         when(orderRepository.findById(orderId)).thenReturn(Optional.ofNullable(order));
         when(orderRepository.save(order)).thenReturn(order);
@@ -111,7 +111,7 @@ public class OrderServiceTest {
     }
 
     @Test
-    public void DeleteOrderById_returnNothing(){
+    public void DeleteOrderById_ReturnNothing(){
         long orderId = 1L;
         when(orderRepository.findById(orderId)).thenReturn(Optional.ofNullable(order));
         assertAll(() -> orderService.deleteOrder(orderId));
