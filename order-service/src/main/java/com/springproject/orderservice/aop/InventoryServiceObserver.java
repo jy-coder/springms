@@ -12,7 +12,7 @@ import java.util.function.Supplier;
             contextualName = "inventory-service-lookup",
             lowCardinalityKeyValues = {"call", "inventory-service"})
 public class InventoryServiceObserver {
-    public void observeInventoryServiceCall(Supplier<?> action) {
-            action.get();
+    public boolean observeInventoryServiceCall(Supplier<Boolean> action) {
+        return action.get();
     }
 }
