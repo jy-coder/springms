@@ -14,6 +14,7 @@ import com.springproject.orderservice.repository.OrderRepository;
 import com.springproject.orderservice.service.OrderService;
 import io.micrometer.observation.annotation.Observed;
 import io.micrometer.tracing.annotation.ContinueSpan;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -29,20 +30,13 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@AllArgsConstructor
 public class OrderServiceImpl implements OrderService {
     private OrderRepository orderRepository;
-    private final WebClient  webClient;
-    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
+    private  WebClient  webClient;
+    private  KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
     @Autowired
     private InventoryServiceObserver inventoryServiceObserver;
-
-    @Autowired
-    public OrderServiceImpl(OrderRepository orderRepository,WebClient.Builder webClientBuilder, @Value("${inventory.service.base-url}") String baseUrl,  KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate, InventoryServiceObserver inventoryServiceObserver) {
-        this.webClient = webClientBuilder.baseUrl(baseUrl).build();
-        this.orderRepository = orderRepository;
-        this.kafkaTemplate = kafkaTemplate;
-        this.inventoryServiceObserver = inventoryServiceObserver;
-    }
 
     @Override
     public String createOrder(OrderDto orderDto) {
