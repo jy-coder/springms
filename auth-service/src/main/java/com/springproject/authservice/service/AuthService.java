@@ -32,13 +32,19 @@ public class AuthService {
     }
 
 
-    public String generateToken(String username, Date expiration) {
-        return jwtService.generateToken(username,expiration);
+    public Integer findUserIdByEmail(String email) {
+        Integer id = null;
+        Optional<UserCredential> userOptional = repository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            UserCredential userCredential = userOptional.get();
+             id = userCredential.getId();
+        }
+        return id;
+    }
+    public String generateToken(Integer userId, Date expiration) {
+        return jwtService.generateToken(userId,expiration);
     }
 
-    public void validateToken(String token) {
-        jwtService.validateToken(token);
-    }
 
 
 }

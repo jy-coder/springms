@@ -8,7 +8,6 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,9 +33,12 @@ public class OrderController {
     @CircuitBreaker(name = "inventory", fallbackMethod = "fallbackMethod")
     @TimeLimiter(name="inventory")
     public CompletableFuture<ResponseEntity<String>> createOrder(@RequestBody OrderDto order) {
-        log.info("Placing Order");
+        String authHeader = request.getHeader("Authorization");
+        String accessToken = jwtUtil.extractToken(authHeader);
+        int userId = jwtUtil.getUserId(accessToken);
+
         return CompletableFuture.supplyAsync(() -> {
-                String response = orderService.createOrder(order);
+                String response = orderService.createOrder(order,userId);
                 return ResponseEntity.status(HttpStatus.CREATED).body(response);
         });
     }

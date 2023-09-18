@@ -22,21 +22,15 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String SECRET;
 
-    public void validateToken(final String token) {
-        Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token);
-    }
-
-
-    public String generateToken(String userName, Date expiration) {
+    public String generateToken(Integer userId, Date expiration) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("username", userName);
-        return createToken(claims, userName, expiration);
+        return createToken(claims, userId, expiration);
     }
 
-    private String createToken(Map<String, Object> claims, String userName, Date expiration) {
+    private String createToken(Map<String, Object> claims, Integer userId, Date expiration) {
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(userName)
+                .setSubject(String.valueOf(userId))
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(expiration)
                 .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();

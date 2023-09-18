@@ -24,13 +24,21 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public Claims decodeToken(final String token) {
-        return Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token).getBody();
+    public String decodeToken(final String token) {
+        Claims claims = Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token).getBody();
+        return claims.getSubject();
     }
 
-    public String getTokenInfo(String token) {
-        Claims claims = decodeToken(token);
-        String username = (String) claims.get("username");
-        return username;
+    public String extractToken(String authHeader){
+        String accessToken = "";
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            accessToken = authHeader.substring(7);
+        }
+        return accessToken;
+    }
+
+    public int getUserId(String token) {
+        int userId = Integer.valueOf(decodeToken(token));
+        return userId;
     }
 }

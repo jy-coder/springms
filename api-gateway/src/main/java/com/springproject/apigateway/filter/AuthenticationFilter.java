@@ -15,8 +15,6 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     @Autowired
     private RouteValidator validator;
 
-    //    @Autowired
-//    private RestTemplate template;
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -33,13 +31,9 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 }
 
                 String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
-                String accessToken = "";
-                if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                    accessToken = authHeader.substring(7);
-                }
+                String accessToken = jwtUtil.extractToken(authHeader);
+
                 try {
-//                    //REST call to AUTH service
-//                    template.getForObject("http://auth-service//validate?token" + authHeader, String.class);
                     jwtUtil.validateToken(accessToken);
 
                     ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()

@@ -75,8 +75,9 @@ public class OrderServiceTest {
 
     @Test
     public void AddOrder_AddNewOrder(){
+        int userId = 1;
         when(inventoryServiceObserver.observeInventoryServiceCall(any())).thenReturn(true);
-        String response = orderService.createOrder(orderDto);
+        String response = orderService.createOrder(orderDto,userId);
         assertEquals("Order Placed Successfully!", response);
     }
 

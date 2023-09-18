@@ -12,20 +12,16 @@ import com.springproject.orderservice.exception.ResourceNotFoundException;
 import com.springproject.orderservice.mapper.AutoOrderMapper;
 import com.springproject.orderservice.repository.OrderRepository;
 import com.springproject.orderservice.service.OrderService;
-import io.micrometer.observation.annotation.Observed;
-import io.micrometer.tracing.annotation.ContinueSpan;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,22 +29,23 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class OrderServiceImpl implements OrderService {
     private OrderRepository orderRepository;
-    private  WebClient  webClient;
+
+    private final WebClient.Builder webClientBuilder;
     private  KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
     @Autowired
     private InventoryServiceObserver inventoryServiceObserver;
 
     @Override
-    public String createOrder(OrderDto orderDto) {
+    public String createOrder(OrderDto orderDto, int userId) {
         Order order = AutoOrderMapper.MAPPER.mapToOrder(orderDto);
-
+        order.setUserId(userId);
         List<String> skuCodes = order.getOrderLineItemsList().stream()
                 .map(OrderLineItems::getSkuCode)
                 .toList();
 
         boolean allProductsInStock =  inventoryServiceObserver.observeInventoryServiceCall(() -> {
-            InventoryResponse[] inventoryResponseArray = webClient.get()
-                    .uri("/api/v1/inventory", uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
+            InventoryResponse[] inventoryResponseArray = webClientBuilder.build().get()
+                    .uri("http://inventory-service/api/v1/inventory", uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
                     .retrieve()
                     .bodyToMono(InventoryResponse[].class)
                     .block();

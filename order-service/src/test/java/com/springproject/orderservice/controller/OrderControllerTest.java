@@ -7,15 +7,18 @@ import com.springproject.orderservice.entity.OrderDto;
 import com.springproject.orderservice.entity.OrderLineItems;
 import com.springproject.orderservice.service.OrderService;
 
+import com.springproject.utils.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 import org.springframework.test.web.servlet.MockMvc;
@@ -49,11 +52,14 @@ public class OrderControllerTest {
     private List<OrderLineItems> orderLineItemsList;
     private Order order;
 
+    private int userId;
     @Autowired
     private ObjectMapper objectMapper;
-
+    @MockBean
+    private JwtUtil jwtUtil;
     @BeforeEach
     public void init() {
+        userId = 1;
         orderLineItemsDtoList = List.of(
                 new OrderLineItemsDto(1L, "SKU001", BigDecimal.valueOf(100), 2),
                 new OrderLineItemsDto(2L, "SKU002", BigDecimal.valueOf(50), 3)
@@ -83,7 +89,9 @@ public class OrderControllerTest {
 
     @Test
     public void CreateOrder_ReturnCreated() throws  Exception {
-        when(orderService.createOrder(orderDto)).thenReturn("");
+        int userId = 1;
+        when(orderService.createOrder(orderDto,userId)).thenReturn("");
+        when(jwtUtil.getUserId(any())).thenReturn(userId);
 
         MvcResult mvcResult   = mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)

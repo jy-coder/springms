@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthRequest {
     @Email(message = "Email address should be valid")
-    private String username;
+    private String email;
     private String password;
 
 }

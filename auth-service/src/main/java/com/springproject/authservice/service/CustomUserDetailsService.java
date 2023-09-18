@@ -1,5 +1,6 @@
-package com.springproject.authservice.config;
+package com.springproject.authservice.service;
 
+import com.springproject.authservice.config.CustomUserDetails;
 import com.springproject.authservice.entity.UserCredential;
 import com.springproject.authservice.repository.UserCredentialRepository;
 import org.springframework.beans.factory.annotation.Autowired;
